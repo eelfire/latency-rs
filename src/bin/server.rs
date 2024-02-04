@@ -8,7 +8,7 @@ fn main() {
 
 fn server() {
     // Listen for incoming connections
-    let listener = TcpListener::bind("127.0.0.1:1155").expect("Failed to bind to address");
+    let listener = TcpListener::bind("0.0.0.0:1155").expect("Failed to bind to address");
 
     // Accept connections and handle them
     for stream in listener.incoming() {
