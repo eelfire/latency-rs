@@ -5,10 +5,22 @@ use std::time::SystemTime;
 use std::time::{Duration, Instant};
 
 fn main() {
-    client(Duration::from_secs(10));
+    let args = std::env::args().collect::<Vec<String>>();
+    if args.len() != 3 {
+        eprintln!("Usage: client <ip> <duration_in_seconds>");
+        std::process::exit(1);
+    }
+
+    let ip = &args[1];
+    let duration = args[2].parse::<u64>().expect("Failed to parse duration");
+
+    println!("Connecting to server at {}", ip);
+    println!("Sending latency packets for {} seconds", duration);
+
+    client(ip, Duration::from_secs(duration));
 }
 
-fn client(test_duration: Duration) {
+fn client(ip: &String, test_duration: Duration) {
     let start_time = Instant::now();
     let end_time = start_time + test_duration;
 
@@ -18,11 +30,14 @@ fn client(test_duration: Duration) {
     let mut file_instant =
         File::create("output/latency_from_instant.txt").expect("Failed to create file_instant");
 
+    // Connect to the server at the specified IP address and 1155 port
+    let mut stream =
+        TcpStream::connect(format!("{}:1155", ip)).expect("Failed to connect to server");
+
+    let mut count: u64 = 0;
+
     // Simulate sending latency packets for the specified duration
     while Instant::now() < end_time {
-        // Connect to the server
-        let mut stream = TcpStream::connect("127.0.0.1:8080").expect("Failed to connect to server");
-
         // Send packet to server
         let packet_start_time = Instant::now();
         let timestamp = SystemTime::now()
@@ -40,10 +55,11 @@ fn client(test_duration: Duration) {
         // thread::sleep(Duration::from_secs(1)); // Simulate network delay
 
         // Receive packet from server
-        let mut buffer = [0; 1024]; // Buffer to store the received data
+        let mut buffer = [0; 16]; // Buffer to store the received data
         let bytes_read = stream
             .read(&mut buffer)
             .expect("Failed to read from server");
+        // println!("Received {} bytes", bytes_read);
         // let received_packet = &buffer[..bytes_read];
         // println!("Received packet: {:?}", received_packet);
 
@@ -75,7 +91,11 @@ fn client(test_duration: Duration) {
             .expect("Failed to write to file_payload");
         writeln!(file_instant, "{}", latency_from_instant)
             .expect("Failed to write to file_instant");
+
+        count += 1;
     }
+
+    println!("Sent {} packets", count);
 
     // Close the files
     file_payload.flush().expect("Failed to flush file_payload");
