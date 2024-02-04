@@ -8,30 +8,26 @@ fn main() {
 
 fn server() {
     // Listen for incoming connections
-    let listener = TcpListener::bind("127.0.0.1:8080").expect("Failed to bind to address");
+    let listener = TcpListener::bind("127.0.0.1:1155").expect("Failed to bind to address");
 
     // Accept connections and handle them
     for stream in listener.incoming() {
         let mut stream = stream.expect("Failed to accept connection");
 
-        // Receive packet from client
-        let mut buffer = [0; 1024]; // Buffer to store the received data
-        let bytes_read = stream
-            .read(&mut buffer)
-            .expect("Failed to read from client");
-        let packet = &buffer[..bytes_read];
+        println!("Client connected from {}", stream.peer_addr().unwrap());
 
-        // Process the received packet
-        // ...
+        let mut buffer = [0; 16]; // Buffer to store the received data
+        while let Ok(bytes_read) = stream.read(&mut buffer) {
+            if bytes_read == 0 {
+                println!("Client disconnected");
+                break;
+            }
+            // println!("Received {} bytes", bytes_read);
 
-        // let timestamp = Instant::now();
-
-        // Mark packet with timestamp
-        // ...
-
-        // Send packet back to client
-        stream
-            .write_all(packet)
-            .expect("Failed to send packet to client");
+            // Send packet back to client
+            stream
+                .write_all(&buffer[..bytes_read])
+                .expect("Failed to send packet to client");
+        }
     }
 }
