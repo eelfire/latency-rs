@@ -32,7 +32,8 @@ fn client(ip: &String, test_duration: Duration) {
     let mut stream =
         TcpStream::connect(format!("{}:1155", ip)).expect("Failed to connect to server");
 
-    let mut count: u64 = 0;
+    let mut send_count: u64 = 0;
+    let mut recv_count: u64 = 0;
 
     // sending latency packets for the specified duration
     while Instant::now() < end_time {
@@ -46,6 +47,7 @@ fn client(ip: &String, test_duration: Duration) {
         stream
             .write_all(packet)
             .expect("Failed to send packet to server");
+        send_count += 1;
 
         // thread::sleep(Duration::from_secs(1)); // simulate network delay
 
@@ -55,6 +57,7 @@ fn client(ip: &String, test_duration: Duration) {
             .read(&mut buffer)
             .expect("Failed to read from server");
         // println!("Received {} bytes", bytes_read);
+        recv_count += 1;
 
         let current_timestamp = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
@@ -72,11 +75,10 @@ fn client(ip: &String, test_duration: Duration) {
         // write latency values to file
         writeln!(file_payload, "{}", latency_from_payload)
             .expect("Failed to write to file_payload");
-
-        count += 1;
     }
 
-    println!("Sent {} packets", count);
+    println!("Sent {} packets", send_count);
+    println!("Received {} packets", recv_count);
 
     // close the file latency values file
     file_payload.flush().expect("Failed to flush file_payload");
